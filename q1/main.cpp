@@ -53,13 +53,14 @@ void test() {
 #pragma ide diagnostic ignored "cert-msc51-cpp"
 int main() {
     srand(time(nullptr)); // NOLINT(cert-msc32-c)
+//    srand(12345); // NOLINT(cert-msc32-c)
     StandardRandom rng;
-    testRand(rng);
-    test();
-    Size size(8, 8);
-    int numDoodlebugs = 0, numAnts = 1;
-//    Size size(20, 20);
-//    int numDoodlebugs = 5, numAnts = 100;
+//    testRand(rng);
+//    test();
+//    Size size(8, 8);
+//    int numDoodlebugs = 0, numAnts = 1;
+    Size size(20, 20);
+    int numDoodlebugs = 5, numAnts = 100;
     int maxTicks = 1000 * 1000 * 1000;
     World world(size);
 //    srand (time(nullptr));

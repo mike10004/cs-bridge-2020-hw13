@@ -89,6 +89,7 @@ void Organism::breed(World &world, Random &rng) {
         std::vector<int> indexesOfUnoccupiedDirections;
         for (int i = 0; i < NUM_DIRECTIONS; i++) {
             Position potential(position_);
+            potential.translate(DIRECTIONS[i]);
             if (world.contains(potential) and !world.occupied(potential)) {
                 indexesOfUnoccupiedDirections.push_back(i);
             }
