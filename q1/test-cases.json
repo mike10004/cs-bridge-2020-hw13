@@ -1,0 +1,20 @@
+{
+  "input": "{nombre}\n",
+  "input_file": "input-template.txt",
+  "expected": "Enter your name: {nombre}\nhello, {nombre}\n",
+  "expected_file": "expected-template.txt",
+  "param_names": [
+    "nombre"
+  ],
+  "test_cases": [
+    [
+      "jane"
+    ],
+    [
+      "julia"
+    ],
+    [
+      "jennifer"
+    ]
+  ]
+}
