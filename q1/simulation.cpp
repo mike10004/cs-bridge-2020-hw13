@@ -13,7 +13,7 @@ const int DIRECTIONS[NUM_DIRECTIONS][2] = {
         {-1, 0}, // north
         {0, 1},  // east
         {1, 0},  // south
-        {0, 1},  // west
+        {0, -1},  // west
 };
 const int DELTA_ROW = 0;
 const int DELTA_COL = 1;
@@ -76,6 +76,7 @@ Organism::Organism(int gestation_period, const Position &position_) : gestation_
 void Organism::move(World &world, Random &rng) {
     int directionIdx = rng.from_range(NUM_DIRECTIONS);
     Position next(position_);
+    // std::cerr << "move: " << DIRECTIONS[directionIdx][0] << DIRECTIONS[directionIdx][1] << std::endl;
     next.translate(DIRECTIONS[directionIdx]);
     if (world.contains(next) && !world.occupied(next)) {
         position_.update(next);

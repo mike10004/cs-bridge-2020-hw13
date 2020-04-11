@@ -10,6 +10,18 @@
 using namespace std;
 
 
+void testRand(Random& random) {
+    int n = 4;
+    int counts[4] = {0};
+    for (int i = 0; i < 1000000; i++) {
+        int v = random.from_range(n);
+        counts[v]++;
+    }
+    for (int i = 0; i < 4; i++) {
+        cout << i << ": " << counts[i] << endl;
+    }
+}
+
 void test() {
     Organism* ant = new Ant(Position(3, 4));
     assert(ant->is_ant());
@@ -40,18 +52,21 @@ void test() {
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-msc51-cpp"
 int main() {
+    srand(time(nullptr)); // NOLINT(cert-msc32-c)
+    StandardRandom rng;
+    testRand(rng);
     test();
-    Size size(20, 20);
-    int numDoodlebugs = 5, numAnts = 100;
+    Size size(8, 8);
+    int numDoodlebugs = 0, numAnts = 1;
+//    Size size(20, 20);
+//    int numDoodlebugs = 5, numAnts = 100;
     int maxTicks = 1000 * 1000 * 1000;
     World world(size);
 //    srand (time(nullptr));
-    srand(12345); // NOLINT(cert-msc32-c)
-    StandardRandom rng;
     world.populate(numDoodlebugs, numAnts, rng);
     while (world.num_ticks() < maxTicks) {
         cout << endl;
-        cout << world.num_ticks() << endl;
+        cout << world.num_ticks() << "\tA: " << world.count_ants() << "\tD: " << world.count_all() - world.count_ants() << endl;
         world.render(cout);
         if (world.count_all() == 0) {
             cerr << "Everybody's dead." << endl;
