@@ -5,65 +5,16 @@
 #include <cstdlib>
 #include <ctime>
 #include "simulation.h"
-#include <cassert>
 
 using namespace std;
 
-
-void testRand(Random& random) {
-    int n = 4;
-    int counts[4] = {0};
-    for (int i = 0; i < 1000000; i++) {
-        int v = random.from_range(n);
-        counts[v]++;
-    }
-    for (int i = 0; i < 4; i++) {
-        cout << i << ": " << counts[i] << endl;
-    }
-}
-
-void test() {
-    Organism* ant = new Ant(Position(3, 4));
-    assert(ant->is_ant());
-    assert(!ant->is_doodlebug());
-    delete ant;
-    Organism* doodlebug = new Doodlebug(Position(3, 4));
-    assert(!doodlebug->is_ant());
-    assert(doodlebug->is_doodlebug());
-    delete doodlebug;
-    StandardRandom rng;
-    {
-        World world(Size(3, 3));
-        world.populate(0, 1, rng);
-        world.tick(rng);
-    }
-    {
-        World world(Size(3, 3));
-        world.populate(1, 0, rng);
-        world.tick(rng);
-    }
-    {
-        World world(Size(3, 3));
-        world.populate(1, 1, rng);
-        world.tick(rng);
-    }
-}
-
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-msc51-cpp"
 int main() {
     srand(time(nullptr)); // NOLINT(cert-msc32-c)
-//    srand(12345); // NOLINT(cert-msc32-c)
     StandardRandom rng;
-//    testRand(rng);
-//    test();
-//    Size size(8, 8);
-//    int numDoodlebugs = 0, numAnts = 1;
     Size size(20, 20);
     int numDoodlebugs = 5, numAnts = 100;
     int maxTicks = 1000 * 1000 * 1000;
     World world(size);
-//    srand (time(nullptr));
     world.populate(numDoodlebugs, numAnts, rng);
     while (world.num_ticks() < maxTicks) {
         cout << endl;
@@ -83,4 +34,3 @@ int main() {
     }
     return 0;
 }
-#pragma clang diagnostic pop
