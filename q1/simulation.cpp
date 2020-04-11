@@ -321,19 +321,26 @@ int World::count_all() const {
 
 void World::tick(Random &rng) {
     nticks++;
-    // make a copy because the array may shrink due to starvation during iteration
-    std::vector<Organism*> organismsCopy = organisms;
-    for (Organism* organism : organismsCopy) {
-        if (organism->is_doodlebug()) {
-            organism->tick(*this, rng);
-            if (organism->is_starved()) {
-                kill(organism->position());
-            }
+    std::vector<Organism*> doodlebugs;
+    for (Organism* organism : organisms) {
+        if (organism->is_doodlebug()){
+            doodlebugs.push_back(organism);
         }
     }
+    for (Organism* doodlebug : doodlebugs) {
+        doodlebug->tick(*this, rng);
+        if (doodlebug->is_starved()) {
+            kill(doodlebug->position());
+        }
+    }
+    std::vector<Organism*> ants;
     for (Organism* organism : organisms) {
         if (organism->is_ant()) {
-            organism->tick(*this, rng);
+            ants.push_back(organism);
         }
-    }    
+    }
+    for (Organism* ant : ants) {
+        ant->tick(*this, rng);
+    }
+    check();
 }

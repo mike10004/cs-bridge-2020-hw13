@@ -5,13 +5,42 @@
 #include <cstdlib>
 #include <ctime>
 #include "simulation.h"
+#include <cassert>
 
 using namespace std;
 
 
+void test() {
+    Organism* ant = new Ant(Position(3, 4));
+    assert(ant->is_ant());
+    assert(!ant->is_doodlebug());
+    delete ant;
+    Organism* doodlebug = new Doodlebug(Position(3, 4));
+    assert(!doodlebug->is_ant());
+    assert(doodlebug->is_doodlebug());
+    delete doodlebug;
+    StandardRandom rng;
+    {
+        World world(Size(3, 3));
+        world.populate(0, 1, rng);
+        world.tick(rng);
+    }
+    {
+        World world(Size(3, 3));
+        world.populate(1, 0, rng);
+        world.tick(rng);
+    }
+    {
+        World world(Size(3, 3));
+        world.populate(1, 1, rng);
+        world.tick(rng);
+    }
+}
+
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-msc51-cpp"
 int main() {
+    test();
     Size size(20, 20);
     int numDoodlebugs = 5, numAnts = 100;
     int maxTicks = 1000 * 1000 * 1000;
