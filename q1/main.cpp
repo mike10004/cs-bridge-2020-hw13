@@ -44,14 +44,17 @@ public:
 
 class Position {
 public:
-    int row;
-    int col;
     Position();
     Position(int row, int col);
     Position(const Position& other);
     void translate(const int delta[]);
     void update(const Position& source);
     bool equals(const Position& other) const;
+    int row() const;
+    int col() const;
+private:
+    int row_;
+    int col_;
 };
 class World;
 
@@ -108,7 +111,7 @@ private:
     void populateAnts(const std::vector<Position>& positions, int offset, int numAnts);
 public:
     explicit World(const Size& size_);
-    virtual ~World();
+    ~World();
     int num_ticks() const;
     void populate(int numDoodlebugs, int numAnts, Random& rng);
     void render(std::ostream& out) const;
@@ -173,25 +176,25 @@ int Size::num_cells() const {
     return rows * cols;
 }
 
-Position::Position(int row, int col) : row(row), col(col) {
+Position::Position(int row, int col) : row_(row), col_(col) {
 
 }
 
 void Position::translate(const int delta[]) {
-    row += delta[DELTA_ROW];
-    col += delta[DELTA_COL];
+    row_ += delta[DELTA_ROW];
+    col_ += delta[DELTA_COL];
 }
 
 void Position::update(const Position &source) {
-    row = source.row;
-    col = source.col;
+    row_ = source.row();
+    col_ = source.col();
 }
 
 bool Position::equals(const Position &other) const {
-    return other.row == row && other.col == col;
+    return other.row_ == row_ && other.col_ == col_;
 }
 
-Position::Position(const Position &other) : row(other.row), col(other.col) {
+Position::Position(const Position &other) : row_(other.row_), col_(other.col_) {
 }
 
 Position::Position() : Position(0, 0) {
@@ -352,7 +355,7 @@ void World::populate(int numDoodlebugs, int numAnts, Random &rng) {
     std::vector<Position> allPositions;
     for (int row = 0; row < size.rows; row++) {
         for (int col = 0; col < size.cols; col++) {
-            allPositions.push_back(Position(row, col));
+            allPositions.emplace_back(row, col);
         }
     }
     std::vector<Position> organismPositions;
@@ -432,8 +435,8 @@ bool World::is_ant(const Position &position) const {
 }
 
 bool World::contains(const Position &position) const {
-    return position.row >= 0 && position.row < size.rows
-           && position.col >= 0 && position.col < size.cols;
+    return position.row() >= 0 && position.row() < size.rows
+           && position.col() >= 0 && position.col() < size.cols;
 }
 
 int World::count_ants() const {
