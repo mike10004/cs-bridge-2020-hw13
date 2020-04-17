@@ -69,7 +69,7 @@ protected:
 public:
     Organism(int gestation_period, const Position& position_);
     virtual ~Organism();
-    const Position& position() const;
+    const Position& position();
     virtual bool isDoodlebug() const = 0;
     virtual bool isAnt() const = 0;
     virtual bool isStarved() const = 0;
@@ -119,6 +119,7 @@ public:
     void populate(int numDoodlebugs, int numAnts, Random& rng);
     void render(std::ostream& out) const;
     Organism* at(const Position& position) const;
+    void notifyPositionChanged(const Position& previous, const Organism* organism);
     bool occupied(const Position& position) const;
     void spawn(Organism* organism);
     void kill(const Position& position);
@@ -170,7 +171,6 @@ int main(int argc, char* argv[]) {
         const char* ENV_DOODLEBUGS_NONINTERACTIVE = "DOODLEBUGS_NONINTERACTIVE";
         const char* ENV_DOODLEBUGS_MAX_TICKS = "DOODLEBUGS_MAX_TICKS";
         const char* ENV_DOODLEBUGS_SEED = "DOODLEBUGS_SEED";
-        const char* ENV_DOODLEBUGS_SLEEP = "DOODLEBUGS_SLEEP";
         const char* ENV_DOODLEBUGS_QUIET = "DOODLEBUGS_QUIET";
 
         if (argc > 1) {
@@ -197,15 +197,10 @@ int main(int argc, char* argv[]) {
         if (!quietStr.empty()) {
             quiet = quietStr == "1";
         }
-        std::string sleepStr = GetEnv(ENV_DOODLEBUGS_SLEEP);
-        if (!sleepStr.empty()) {
-            sleep_duration = ParseInt(seedStr, 10, 1);
-        }
         std::cerr << ENV_DOODLEBUGS_NONINTERACTIVE << "=" << nonInteractiveStr << std::endl;
         std::cerr << ENV_DOODLEBUGS_MAX_TICKS << "=" << maxTicksStr << std::endl;
         std::cerr << ENV_DOODLEBUGS_SEED << "=" << seedStr << std::endl;
         std::cerr << ENV_DOODLEBUGS_QUIET << "=" << quietStr << std::endl;
-        std::cerr << ENV_DOODLEBUGS_SLEEP << "=" << sleepStr << std::endl;
     }
     // stage: cut stop
     World world(size);
@@ -309,7 +304,9 @@ void Organism::move(World &world, Random &rng) {
     // std::cerr << "move: " << DIRECTIONS[directionIdx][0] << DIRECTIONS[directionIdx][1] << std::endl;
     next.translate(DIRECTIONS[directionIdx]);
     if (world.contains(next) && !world.occupied(next)) {
+        Position previous(position_);
         position_.update(next);
+        world.notifyPositionChanged(previous, this);
     }
 }
 
@@ -340,7 +337,7 @@ void Organism::tick(World &world, Random &rng) {
     breed(world, rng);
 }
 
-const Position& Organism::position() const {
+const Position& Organism::position() {
     return position_;
 }
 
@@ -417,7 +414,9 @@ bool Doodlebug::hunt(World &world, Random &rng) {
         Position destination(position_);
         destination.translate(DIRECTIONS[dirIndex]);
         world.kill(destination);
+        Position previous(position_);
         position_.update(destination);
+        world.notifyPositionChanged(previous, this);
         ticks_since_fed = 0;
         return true;
     }
@@ -575,4 +574,8 @@ void World::tick(Random &rng) {
         ant->tick(*this, rng);
     }
     check();
+}
+
+void World::notifyPositionChanged(const Position &previous, const Organism *organism) {
+
 }
