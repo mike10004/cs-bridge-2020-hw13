@@ -28,13 +28,13 @@ const char CHAR_VACANT = '-';
 
 class Random {
 public:
-    int fromRange(int maxExclusive);
-    virtual int fromRange(int minInclusive, int maxExclusive) = 0;
+    int from_range(int max_exclusive);
+    virtual int from_range(int minInclusive, int maxExclusive) = 0;
 };
 
 class StandardRandom : public Random {
 public:
-    int fromRange(int minInclusive, int maxExclusive) override;
+    int from_range(int min_inclusive, int max_exclusive) override;
 };
 
 struct Size {
@@ -42,7 +42,7 @@ public:
     const int rows;
     const int cols;
     Size(int rows, int cols);
-    int calcNumCells() const;
+    int num_cells() const;
 };
 
 class Position {
@@ -70,11 +70,11 @@ public:
     Organism(int gestation_period, const Position& position_);
     virtual ~Organism();
     const Position& position();
-    virtual bool isDoodlebug() const = 0;
-    virtual bool isAnt() const = 0;
-    virtual bool isStarved() const = 0;
+    virtual bool is_doodlebug() const = 0;
+    virtual bool is_ant() const = 0;
+    virtual bool is_starved() const = 0;
     virtual void move(World& world, Random& rng);
-    virtual Organism* giveBirth(const Position& position) const = 0;
+    virtual Organism* give_birth(const Position& position) const = 0;
     void breed(World& world, Random& rng);
     void tick(World& world, Random& rng);
     virtual void render(std::ostream& out) const = 0;
@@ -83,20 +83,20 @@ public:
 class Ant : public Organism {
 public:
     explicit Ant(const Position& position_);
-    bool isDoodlebug() const override;
-    bool isAnt() const override;
-    bool isStarved() const override;
-    Organism* giveBirth(const Position& position) const override;
+    bool is_doodlebug() const override;
+    bool is_ant() const override;
+    bool is_starved() const override;
+    Organism* give_birth(const Position& position) const override;
     void render(std::ostream& out) const override;
 };
 
 class Doodlebug : public Organism {
 public:
     explicit Doodlebug(const Position& position_);
-    bool isDoodlebug() const override;
-    bool isAnt() const override;
-    bool isStarved() const override;
-    Organism* giveBirth(const Position& position) const override;
+    bool is_doodlebug() const override;
+    bool is_ant() const override;
+    bool is_starved() const override;
+    Organism* give_birth(const Position& position) const override;
     void render(std::ostream& out) const override;
     void move(World& world, Random& rng) override;
 private:
@@ -110,23 +110,21 @@ private:
     std::vector<Organism*> organisms;
     int nticks;
     void check() const;
-    void populateDoodlebugs(const std::vector<Position>& positions, int offset, int numDoodlebugs);
-    void populateAnts(const std::vector<Position>& positions, int offset, int numAnts);
+    void populate_doodlebugs(const std::vector<Position>& positions, int offset, int num_doodlebugs);
+    void populate_ants(const std::vector<Position>& positions, int offset, int num_ants);
 public:
     explicit World(const Size& size_);
     ~World();
-    int getNumTicks() const;
-    void populate(int numDoodlebugs, int numAnts, Random& rng);
+    int num_ticks() const;
+    void populate(int num_doodlebugs, int num_ants, Random& rng);
     void render(std::ostream& out) const;
     Organism* at(const Position& position) const;
-    void notifyPositionChanged(const Position& previous, const Organism* organism);
     bool occupied(const Position& position) const;
     void spawn(Organism* organism);
     void kill(const Position& position);
-    bool isAnt(const Position& position) const;
     bool contains(const Position& position) const;
-    int countAnts() const;
-    int countAll() const;
+    int count_ants() const;
+    int count_organisms() const;
     void tick(Random& rng);
 };
 
@@ -162,9 +160,9 @@ int main(int argc, char* argv[]) {
     srand(time(nullptr)); // NOLINT(cert-msc32-c)
     StandardRandom rng;
     Size size(20, 20);
-    int numDoodlebugs = 5, numAnts = 100;
+    int initial_num_doodlebugs = 5, initial_num_ants = 100;
     int maxTicks = 1000 * 1000 * 1000;
-    bool nonInteractive = false, quiet = false;
+    bool noninteractive = false, quiet = false;
     // stage: cut start
     int sleep_duration = 0;
     {
@@ -179,7 +177,7 @@ int main(int argc, char* argv[]) {
         }
         std::string nonInteractiveStr = GetEnv(ENV_DOODLEBUGS_NONINTERACTIVE);
         if (!nonInteractiveStr.empty()) {
-            nonInteractive = nonInteractiveStr == "1";
+            noninteractive = nonInteractiveStr == "1";
         }
         std::string maxTicksStr = GetEnv(ENV_DOODLEBUGS_MAX_TICKS);
         if (!maxTicksStr.empty()) {
@@ -204,25 +202,25 @@ int main(int argc, char* argv[]) {
     }
     // stage: cut stop
     World world(size);
-    world.populate(numDoodlebugs, numAnts, rng);
-    while (world.getNumTicks() < maxTicks) {
+    world.populate(initial_num_doodlebugs, initial_num_ants, rng);
+    while (world.num_ticks() < maxTicks) {
         if (!quiet) {
             std::cout << std::endl;
-            std::cout << world.getNumTicks()
-                      << " Ants: " << world.countAnts()
-                      << " Doodlebugs: " << world.countAll() - world.countAnts()
+            std::cout << world.num_ticks()
+                      << " Ants: " << world.count_ants()
+                      << " Doodlebugs: " << world.count_organisms() - world.count_ants()
                       << std::endl;
             world.render(std::cout);
         }
-        if (world.countAll() == 0) {
+        if (world.count_organisms() == 0) {
             std::cerr << "Everybody's dead." << std::endl;
             break;
         }
-        if (size.calcNumCells() == world.countAnts()) {
+        if (size.num_cells() == world.count_ants()) {
             std::cerr << "I for one welcome our new ant overlords." << std::endl;
             break;
         }
-        if (!nonInteractive) {
+        if (!noninteractive) {
             std::cout << "Press enter to continue...";
             std::cin.get();
         }
@@ -234,22 +232,22 @@ int main(int argc, char* argv[]) {
         // stage: cut stop
     }
     std::cout << "Final: "
-              << world.getNumTicks()
-              << " Ants: " << world.countAnts()
-              << " Doodlebugs: " << world.countAll() - world.countAnts()
+              << world.num_ticks()
+              << " Ants: " << world.count_ants()
+              << " Doodlebugs: " << world.count_organisms() - world.count_ants()
               << std::endl;
     return 0;
 }
 
-int StandardRandom::fromRange(int minInclusive, int maxExclusive) {
-    assert(maxExclusive > minInclusive);
-    int width = maxExclusive - minInclusive;
+int StandardRandom::from_range(int min_inclusive, int max_exclusive) {
+    assert(max_exclusive > min_inclusive);
+    int width = max_exclusive - min_inclusive;
     int offset = rand() % width;
-    return minInclusive + offset;
+    return min_inclusive + offset;
 }
 
-int Random::fromRange(int maxExclusive) {
-    return fromRange(0, maxExclusive);
+int Random::from_range(int max_exclusive) {
+    return from_range(0, max_exclusive);
 }
 
 Size::Size(int rows, int cols) : rows(rows), cols(cols) {
@@ -257,7 +255,7 @@ Size::Size(int rows, int cols) : rows(rows), cols(cols) {
     assert(cols >= 0);
 }
 
-int Size::calcNumCells() const {
+int Size::num_cells() const {
     return rows * cols;
 }
 
@@ -299,33 +297,31 @@ Organism::Organism(int gestation_period, const Position &position_) : gestation_
 }
 
 void Organism::move(World &world, Random &rng) {
-    int directionIdx = rng.fromRange(NUM_DIRECTIONS);
+    int direction_index = rng.from_range(NUM_DIRECTIONS);
     Position next(position_);
-    // std::cerr << "move: " << DIRECTIONS[directionIdx][0] << DIRECTIONS[directionIdx][1] << std::endl;
-    next.translate(DIRECTIONS[directionIdx]);
+    next.translate(DIRECTIONS[direction_index]);
     if (world.contains(next) && !world.occupied(next)) {
         Position previous(position_);
         position_.update(next);
-        world.notifyPositionChanged(previous, this);
     }
 }
 
 void Organism::breed(World &world, Random &rng) {
     ticks_since_bred++;
     if (ticks_since_bred >= gestation_period) {
-        std::vector<int> indexesOfUnoccupiedDirections;
+        std::vector<int> indexes_of_unoccupied_directions;
         for (int i = 0; i < NUM_DIRECTIONS; i++) {
             Position potential(position_);
             potential.translate(DIRECTIONS[i]);
             if (world.contains(potential) and !world.occupied(potential)) {
-                indexesOfUnoccupiedDirections.push_back(i);
+                indexes_of_unoccupied_directions.push_back(i);
             }
         }
-        if (!indexesOfUnoccupiedDirections.empty()) {
-            int index = rng.fromRange(indexesOfUnoccupiedDirections.size());
+        if (!indexes_of_unoccupied_directions.empty()) {
+            int index = rng.from_range(indexes_of_unoccupied_directions.size());
             Position childPosition(position_);
-            childPosition.translate(DIRECTIONS[indexesOfUnoccupiedDirections[index]]);
-            Organism* child = giveBirth(childPosition);
+            childPosition.translate(DIRECTIONS[indexes_of_unoccupied_directions[index]]);
+            Organism* child = give_birth(childPosition);
             world.spawn(child);
             ticks_since_bred = 0;
         }
@@ -348,19 +344,19 @@ Organism::~Organism() {
 Ant::Ant(const Position &position_) : Organism(GESTATION_PERIOD_ANT, position_) {
 }
 
-bool Ant::isDoodlebug() const {
+bool Ant::is_doodlebug() const {
     return false;
 }
 
-bool Ant::isAnt() const {
+bool Ant::is_ant() const {
     return true;
 }
 
-bool Ant::isStarved() const {
+bool Ant::is_starved() const {
     return false;
 }
 
-Organism *Ant::giveBirth(const Position &position) const {
+Organism *Ant::give_birth(const Position &position) const {
     return new Ant(position);
 }
 
@@ -371,19 +367,19 @@ void Ant::render(std::ostream &out) const {
 Doodlebug::Doodlebug(const Position &position_) : Organism(GESTATION_PERIOD_DOODLEBUG, position_), ticks_since_fed(0) {
 }
 
-bool Doodlebug::isDoodlebug() const {
+bool Doodlebug::is_doodlebug() const {
     return true;
 }
 
-bool Doodlebug::isAnt() const {
+bool Doodlebug::is_ant() const {
     return false;
 }
 
-bool Doodlebug::isStarved() const {
+bool Doodlebug::is_starved() const {
     return ticks_since_fed >= STARVATION_PERIOD_DOODLEBUG;
 }
 
-Organism *Doodlebug::giveBirth(const Position &position) const {
+Organism *Doodlebug::give_birth(const Position &position) const {
     return new Doodlebug(position);
 }
 
@@ -392,31 +388,31 @@ void Doodlebug::render(std::ostream &out) const {
 }
 
 void Doodlebug::move(World &world, Random &rng) {
-    bool movedWhenHunting = hunt(world, rng);
-    if (!movedWhenHunting) {
+    bool moved_when_hunting = hunt(world, rng);
+    if (!moved_when_hunting) {
         Organism::move(world, rng);
     }
 }
 
 bool Doodlebug::hunt(World &world, Random &rng) {
     ticks_since_fed++;
-    std::vector<int> indexesOfDirectionsWhereAntsAre;
+    std::vector<int> indexes_of_directions_with_ants;
     for (int i = 0; i < NUM_DIRECTIONS; i++) {
         Position potential(position_);
         potential.translate(DIRECTIONS[i]);
-        if (world.isAnt(potential)) {
-            indexesOfDirectionsWhereAntsAre.push_back(i);
+        Organism* organism_at_potential = world.at(potential);
+        if (organism_at_potential != nullptr && organism_at_potential->is_ant()) {
+            indexes_of_directions_with_ants.push_back(i);
         }
     }
-    if (!indexesOfDirectionsWhereAntsAre.empty()) {
-        int randomChoice = rng.fromRange(indexesOfDirectionsWhereAntsAre.size());
-        int dirIndex = indexesOfDirectionsWhereAntsAre[randomChoice];
+    if (!indexes_of_directions_with_ants.empty()) {
+        int randomChoice = rng.from_range(indexes_of_directions_with_ants.size());
+        int dirIndex = indexes_of_directions_with_ants[randomChoice];
         Position destination(position_);
         destination.translate(DIRECTIONS[dirIndex]);
         world.kill(destination);
         Position previous(position_);
         position_.update(destination);
-        world.notifyPositionChanged(previous, this);
         ticks_since_fed = 0;
         return true;
     }
@@ -443,38 +439,38 @@ World::~World() {
     }
 }
 
-int World::getNumTicks() const {
+int World::num_ticks() const {
     return nticks;
 }
 
-void World::populate(int numDoodlebugs, int numAnts, Random &rng) {
-    assert(numDoodlebugs + numAnts <= size.calcNumCells());
-    std::vector<Position> allPositions;
+void World::populate(int num_doodlebugs, int num_ants, Random &rng) {
+    assert(num_doodlebugs + num_ants <= size.num_cells());
+    std::vector<Position> all_positions;
     for (int row = 0; row < size.rows; row++) {
         for (int col = 0; col < size.cols; col++) {
-            allPositions.emplace_back(row, col);
+            all_positions.emplace_back(row, col);
         }
     }
-    std::vector<Position> organismPositions;
-    for (int i = 0; i < numDoodlebugs + numAnts; i++) {
-        int posIndex = rng.fromRange(allPositions.size());
-        Position position(allPositions[posIndex]);
-        allPositions.erase(allPositions.begin() + posIndex);
-        organismPositions.push_back(position);
+    std::vector<Position> organism_positions;
+    for (int i = 0; i < num_doodlebugs + num_ants; i++) {
+        int posIndex = rng.from_range(all_positions.size());
+        Position position(all_positions[posIndex]);
+        all_positions.erase(all_positions.begin() + posIndex);
+        organism_positions.push_back(position);
     }
-    populateDoodlebugs(organismPositions, 0, numDoodlebugs);
-    populateAnts(organismPositions, numDoodlebugs, numAnts);
+    populate_doodlebugs(organism_positions, 0, num_doodlebugs);
+    populate_ants(organism_positions, num_doodlebugs, num_ants);
 }
 
-void World::populateDoodlebugs(const std::vector<Position> &positions, int offset, int numDoodlebugs) {
-    for (int i = offset; i < offset + numDoodlebugs; i++) {
+void World::populate_doodlebugs(const std::vector<Position> &positions, int offset, int num_doodlebugs) {
+    for (int i = offset; i < offset + num_doodlebugs; i++) {
         const Position& position = positions[i];
         spawn(new Doodlebug(position));
     }
 }
 
-void World::populateAnts(const std::vector<Position> &positions, int offset, int numAnts) {
-    for (int i = offset; i < offset + numAnts; i++) {
+void World::populate_ants(const std::vector<Position> &positions, int offset, int num_ants) {
+    for (int i = offset; i < offset + num_ants; i++) {
         const Position& position = positions[i];
         spawn(new Ant(position));
     }
@@ -526,27 +522,22 @@ void World::kill(const Position &position) {
     organisms.erase(organisms.begin() + index);
 }
 
-bool World::isAnt(const Position &position) const {
-    Organism* organism = at(position);
-    return organism != nullptr && organism->isAnt();
-}
-
 bool World::contains(const Position &position) const {
     return position.row() >= 0 && position.row() < size.rows
            && position.col() >= 0 && position.col() < size.cols;
 }
 
-int World::countAnts() const {
+int World::count_ants() const {
     int count = 0;
     for (Organism* organism : organisms){
-        if (organism->isAnt()) {
+        if (organism->is_ant()) {
             count++;
         }
     }
     return count;
 }
 
-int World::countAll() const {
+int World::count_organisms() const {
     return organisms.size();
 }
 
@@ -554,19 +545,19 @@ void World::tick(Random &rng) {
     nticks++;
     std::vector<Organism*> doodlebugs;
     for (Organism* organism : organisms) {
-        if (organism->isDoodlebug()){
+        if (organism->is_doodlebug()){
             doodlebugs.push_back(organism);
         }
     }
     for (Organism* doodlebug : doodlebugs) {
         doodlebug->tick(*this, rng);
-        if (doodlebug->isStarved()) {
+        if (doodlebug->is_starved()) {
             kill(doodlebug->position());
         }
     }
     std::vector<Organism*> ants;
     for (Organism* organism : organisms) {
-        if (organism->isAnt()) {
+        if (organism->is_ant()) {
             ants.push_back(organism);
         }
     }
@@ -574,8 +565,4 @@ void World::tick(Random &rng) {
         ant->tick(*this, rng);
     }
     check();
-}
-
-void World::notifyPositionChanged(const Position &previous, const Organism *organism) {
-
 }
