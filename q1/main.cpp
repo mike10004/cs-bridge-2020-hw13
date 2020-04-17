@@ -26,17 +26,40 @@ const char CHAR_ANT = 'o';
 const char CHAR_DOODLEBUG = 'X';
 const char CHAR_VACANT = '-';
 
+/**
+ * Class that represents a random number generator.
+ */
 class Random {
 public:
+
+    /**
+     * Generates a random integer between 0 and the given cap.
+     * @param max_exclusive the cap (exclusive)
+     * @return a random integer
+     */
     int from_range(int max_exclusive);
+
+    /**
+     * Generates a random integer within the specified range.
+     * @param minInclusive minimum (inclusive) value of the range
+     * @param maxExclusive maximum (exclusive) value of the range
+     * @return a random integer
+     */
     virtual int from_range(int minInclusive, int maxExclusive) = 0;
 };
 
+/**
+ * Implementation of a random number generator that uses the
+ * rand function in the standard library.
+ */
 class StandardRandom : public Random {
 public:
     int from_range(int min_inclusive, int max_exclusive) override;
 };
 
+/**
+ * Struct that represents the size of the world.
+ */
 struct Size {
 public:
     const int rows;
@@ -45,12 +68,23 @@ public:
     int num_cells() const;
 };
 
+/**
+ * Class that represents a position in the world.
+ */
 class Position {
 public:
     Position();
     Position(int row, int col);
     Position(const Position& other);
+    /**
+     * Updates this position, shifting it by the given row and column offsets.
+     * @param delta an array of two integers, row offset at index 0 and column offset at index 1
+     */
     void translate(const int delta[]);
+    /**
+     * Updates this position to the given value.
+     * @param source new value
+     */
     void update(const Position& source);
     bool equals(const Position& other) const;
     int row() const;
@@ -61,25 +95,84 @@ private:
 };
 class World;
 
+/**
+ * Class that represents an organism.
+ */
 class Organism {
 protected:
     const int gestation_period;
     int ticks_since_bred;
     Position position_;
 public:
-    Organism(int gestation_period, const Position& position_);
+    /**
+     * Constructs an instance. The gestation period is the number of ticks
+     * this organism must wait after breeding to breed again.
+     * @param gestation_period gestation period
+     * @param position position of this organism in the world
+     */
+    Organism(int gestation_period, const Position& position);
     virtual ~Organism();
     const Position& position();
+
+    /**
+     * Checks whether this organism is a doodlebug.
+     * Implementation note: This is a bit of a violation of polymorphism,
+     * but we do it to enable the World class to maintain only one vector
+     * of organisms, rather than separate vectors for doodlebugs and ants.
+     * @return true if and only if this organism is a doodlebug
+     */
     virtual bool is_doodlebug() const = 0;
+
+    /**
+     * Checks whether this organism is an ant.
+     * @return true if and only if this organism is an ant
+     */
     virtual bool is_ant() const = 0;
+
+    /**
+     * Checks whether this organism has starved.
+     * @return true if this organism has starved
+     */
     virtual bool is_starved() const = 0;
+
+    /**
+     * Attempts to move this organism within the given world.
+     * @param world the world
+     * @param rng random number generator
+     */
     virtual void move(World& world, Random& rng);
+
+    /**
+     * Allocates a new organism instance of this subclass on the heap.
+     * @param position position the organism is to occupy
+     * @return pointer to newly allocated organism
+     */
     virtual Organism* give_birth(const Position& position) const = 0;
+
+    /**
+     * Attempts to breed.
+     * @param world the world
+     * @param rng random number generator
+     */
     void breed(World& world, Random& rng);
+
+    /**
+     * Attempts movement and breeding.
+     * @param world the world
+     * @param rng random number generator
+     */
     void tick(World& world, Random& rng);
+
+    /**
+     * Renders this organism to the given output stream.
+     * @param out stream
+     */
     virtual void render(std::ostream& out) const = 0;
 };
 
+/**
+ * Class that represents an ant.
+ */
 class Ant : public Organism {
 public:
     explicit Ant(const Position& position_);
@@ -90,6 +183,9 @@ public:
     void render(std::ostream& out) const override;
 };
 
+/**
+ * Class that represents a doodlebug.
+ */
 class Doodlebug : public Organism {
 public:
     explicit Doodlebug(const Position& position_);
@@ -104,27 +200,94 @@ private:
     bool hunt(World& world, Random& rng);
 };
 
+/**
+ * Class that represents a world of ants and doodlebugs.
+ */
 class World {
 private:
     const Size size;
     std::vector<Organism*> organisms;
     int nticks;
+    /**
+     * Checks whether the organisms are in valid positions.
+     * This function is superfluous and can be removed if performance is a priority.
+     */
     void check() const;
+
+    /**
+     * Populates this world with doodlebugs at some of the given positions.
+     * @param positions vector of positions
+     * @param offset offset in vector at which to start
+     * @param num_doodlebugs number of doodlebugs to populate
+     */
     void populate_doodlebugs(const std::vector<Position>& positions, int offset, int num_doodlebugs);
+
+    /**
+     * Populates this world with ants at some of the given positions.
+     * @param positions vector of positions
+     * @param offset offset in vector at which to start
+     * @param num_ants number of ants to populate
+     */
     void populate_ants(const std::vector<Position>& positions, int offset, int num_ants);
 public:
     explicit World(const Size& size_);
     ~World();
     int num_ticks() const;
+    /**
+     * Populates this world with ants and doodlebugs at random positions.
+     * @param num_doodlebugs number of doodlebugs
+     * @param num_ants number of ants
+     * @param rng random number generator.
+     */
     void populate(int num_doodlebugs, int num_ants, Random& rng);
+
+    /**
+     * Renders this world to the output stream.
+     * @param out
+     */
     void render(std::ostream& out) const;
+
+    /**
+     * Returns a pointer to the organism at the given position.
+     * @param position position
+     * @return organism pointer or null if position is not occupied
+     */
     Organism* at(const Position& position) const;
+
+    /**
+     * Checks whether the given position is occupied by an organism.
+     * @param position the position
+     * @return true if and only if the given position is occupied
+     */
     bool occupied(const Position& position) const;
+
+    /**
+     * Places an organism in this world. The organism will be destroyed
+     * when it is killed or this world instance is destroyed.
+     * @param organism
+     */
     void spawn(Organism* organism);
+
+    /**
+     * Kills the organism at the given position. The organism instance is destroyed.
+     * @param position position
+     */
     void kill(const Position& position);
+
+    /**
+     * Checks whether this world contains the given position.
+     * @param position position
+     * @return true if and only if the position is within the bounds of this world
+     */
     bool contains(const Position& position) const;
     int count_ants() const;
     int count_organisms() const;
+
+    /**
+     * Advances time by one tick. First, doodlebugs are each advanced one tick,
+     * then ants are advanced one tick.
+     * @param rng random number generator
+     */
     void tick(Random& rng);
 };
 
@@ -205,10 +368,12 @@ int main(int argc, char* argv[]) {
     world.populate(initial_num_doodlebugs, initial_num_ants, rng);
     while (world.num_ticks() < maxTicks) {
         if (!quiet) {
+            int num_ants = world.count_ants();
+            int num_doodlebugs = world.count_organisms() - num_ants;
             std::cout << std::endl;
             std::cout << world.num_ticks()
-                      << " Ants: " << world.count_ants()
-                      << " Doodlebugs: " << world.count_organisms() - world.count_ants()
+                      << " Ants: " << num_ants
+                      << " Doodlebugs: " << num_doodlebugs
                       << std::endl;
             world.render(std::cout);
         }
@@ -490,6 +655,15 @@ void World::render(std::ostream &out) const {
     }
 }
 
+/*
+ * Implementation note: This does an O(n) search for the organism,
+ * where n is the number of organisms. The World class could be
+ * maintain a map of positions to organisms, which would reduce the
+ * complexity of this operation to O(1). This implementation keeps
+ * it simple at the expense of performance, but because the number of
+ * organisms is capped at the size of the world, the downside is
+ * not too great.
+ */
 Organism *World::at(const Position &position) const {
     for (Organism* organism : organisms) {
         if (position.equals(organism->position())) {
@@ -508,6 +682,11 @@ void World::spawn(Organism *organism) {
     organisms.push_back(organism);
 }
 
+/*
+ * Implementation note: this does an O(n) search to find
+ * the organism at the given position. See note that
+ * accompanies the at() function about that.
+ */
 void World::kill(const Position &position) {
     int index = -1;
     for (int i = 0; i < organisms.size(); i++) {
@@ -527,6 +706,13 @@ bool World::contains(const Position &position) const {
            && position.col() >= 0 && position.col() < size.cols;
 }
 
+/*
+ * Implementation note: this does an O(n) examination of the
+ * organisms vector. If performance were a priority, we could
+ * maintain a count of ants that is updated as they breed or
+ * are killed. But we only call this function once per tick,
+ * so the hit is not substantial.
+ */
 int World::count_ants() const {
     int count = 0;
     for (Organism* organism : organisms){
