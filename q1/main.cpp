@@ -6,6 +6,9 @@
 #include <ctime>
 #include <vector>
 #include <cassert>
+#include <string>
+#include <climits>
+#include <unistd.h>  // stage: cut
 
 const int GESTATION_PERIOD_ANT = 3;
 const int GESTATION_PERIOD_DOODLEBUG = 8;
@@ -126,21 +129,96 @@ public:
     void tick(Random& rng);
 };
 
-int main() {
+// stage: cut start
+std::string GetEnv( const std::string& key)
+{
+    char * val = std::getenv( key.c_str() );
+    return val == nullptr ? std::string("") : std::string(val);
+}
+
+int ParseIntV(const std::string& s, int base, bool& valid) {
+    valid = false;
+    const char* sc = s.c_str();
+    char* ep;
+    long value = strtol(sc, &ep, base);
+    if (ep != sc) {
+        if (value >= INT_MIN && value <= INT_MAX) {
+            valid = true;
+        }
+    }
+    return (int) value;
+}
+
+int ParseInt(const std::string& s, int base, int defaultValue) {
+    bool valid = false;
+    int value = ParseIntV(s, base, valid);
+    return valid ? value : defaultValue;
+}
+
+// stage: cut stop
+
+int main(int argc, char* argv[]) {
     srand(time(nullptr)); // NOLINT(cert-msc32-c)
     StandardRandom rng;
     Size size(20, 20);
     int numDoodlebugs = 5, numAnts = 100;
     int maxTicks = 1000 * 1000 * 1000;
+    bool nonInteractive = false, quiet = false;
+    // stage: cut start
+    int sleep_duration = 0;
+    {
+        const char* ENV_DOODLEBUGS_NONINTERACTIVE = "DOODLEBUGS_NONINTERACTIVE";
+        const char* ENV_DOODLEBUGS_MAX_TICKS = "DOODLEBUGS_MAX_TICKS";
+        const char* ENV_DOODLEBUGS_SEED = "DOODLEBUGS_SEED";
+        const char* ENV_DOODLEBUGS_SLEEP = "DOODLEBUGS_SLEEP";
+        const char* ENV_DOODLEBUGS_QUIET = "DOODLEBUGS_QUIET";
+
+        if (argc > 1) {
+            std::cerr << "usage error; no arguments are accepted" << std::endl;
+            return 1;
+        }
+        std::string nonInteractiveStr = GetEnv(ENV_DOODLEBUGS_NONINTERACTIVE);
+        if (!nonInteractiveStr.empty()) {
+            nonInteractive = nonInteractiveStr == "1";
+        }
+        std::string maxTicksStr = GetEnv(ENV_DOODLEBUGS_MAX_TICKS);
+        if (!maxTicksStr.empty()) {
+            maxTicks = ParseInt(maxTicksStr, 10, maxTicks);
+        }
+        std::string seedStr = GetEnv(ENV_DOODLEBUGS_SEED);
+        if (!seedStr.empty()) {
+            bool ok = false;
+            int seed = ParseIntV(seedStr, 10, ok);
+            if (ok) {
+                srand(seed);
+            }
+        }
+        std::string quietStr = GetEnv(ENV_DOODLEBUGS_QUIET);
+        if (!quietStr.empty()) {
+            quiet = quietStr == "1";
+        }
+        std::string sleepStr = GetEnv(ENV_DOODLEBUGS_SLEEP);
+        if (!sleepStr.empty()) {
+            sleep_duration = ParseInt(seedStr, 10, 1);
+        }
+        std::cerr << ENV_DOODLEBUGS_NONINTERACTIVE << "=" << nonInteractiveStr << std::endl;
+        std::cerr << ENV_DOODLEBUGS_MAX_TICKS << "=" << maxTicksStr << std::endl;
+        std::cerr << ENV_DOODLEBUGS_SEED << "=" << seedStr << std::endl;
+        std::cerr << ENV_DOODLEBUGS_QUIET << "=" << quietStr << std::endl;
+        std::cerr << ENV_DOODLEBUGS_SLEEP << "=" << sleepStr << std::endl;
+    }
+    // stage: cut stop
     World world(size);
     world.populate(numDoodlebugs, numAnts, rng);
     while (world.num_ticks() < maxTicks) {
-        std::cout << std::endl;
-        std::cout << world.num_ticks() 
-                  << "\tAnts: " << world.count_ants() 
-                  << "\tDoodlebugs: " << world.count_all() - world.count_ants() 
-                  << std::endl;
-        world.render(std::cout);
+        if (!quiet) {
+            std::cout << std::endl;
+            std::cout << world.num_ticks()
+                      << " Ants: " << world.count_ants()
+                      << " Doodlebugs: " << world.count_all() - world.count_ants()
+                      << std::endl;
+            world.render(std::cout);
+        }
         if (world.count_all() == 0) {
             std::cerr << "Everybody's dead." << std::endl;
             break;
@@ -149,10 +227,22 @@ int main() {
             std::cerr << "I for one welcome our new ant overlords." << std::endl;
             break;
         }
-        std::cout << "Press enter to continue...";
-        std::cin.get();
+        if (!nonInteractive) {
+            std::cout << "Press enter to continue...";
+            std::cin.get();
+        }
         world.tick(rng);
+        // stage: cut start
+        if (sleep_duration > 0) {
+            sleep(sleep_duration);
+        }
+        // stage: cut stop
     }
+    std::cout << "Final: "
+              << world.num_ticks()
+              << " Ants: " << world.count_ants()
+              << " Doodlebugs: " << world.count_all() - world.count_ants()
+              << std::endl;
     return 0;
 }
 
@@ -178,6 +268,14 @@ int Size::num_cells() const {
 
 Position::Position(int row, int col) : row_(row), col_(col) {
 
+}
+
+int Position::row() const {
+    return row_;
+}
+
+int Position::col() const {
+    return col_;
 }
 
 void Position::translate(const int delta[]) {
